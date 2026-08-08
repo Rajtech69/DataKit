@@ -9,7 +9,8 @@ Example:
 
 from datakit.core.datakit import DataKit
 from datakit.config import config
+from datakit.datasets import list_datasets, load_dataset
 import datakit.safety.safe_ops as safe
 
 __version__ = "0.1.0"
-__all__ = ["DataKit", "config", "safe"]
+__all__ = ["DataKit", "config", "safe", "load_dataset", "list_datasets"]
