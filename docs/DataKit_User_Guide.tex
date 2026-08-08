@@ -1,0 +1,183 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{amsmath,amssymb}
+
+% Package setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={DataKit Official User Guide},
+    pdfpagemode=FullScreen,
+}
+
+% Code Listing Configuration
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.96}
+
+\lstdefinestyle{pythonstyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4
+}
+\lstset{style=pythonstyle}
+
+\title{\textbf{DataKit: Safety-First Python Data Science Abstraction Layer}\\[0.5em] \large Official Technical User Guide \& Reference Manual}
+\author{\textbf{Rajtech69}}
+\date{Version 0.1.0 --- August 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+DataKit is a human-oriented, safety-first Python library built directly on top of NumPy, Pandas, Matplotlib, and Seaborn. It provides explicit safety guards against silent broadcasting bugs, non-destructive data cleaning with mandatory confirmation gates, pure Object-Oriented visual rendering without global state-bleed, scikit-learn pipeline dataset preparation, and zero-dependency multi-format report generation. This document provides a complete technical specification and user manual for DataKit v0.1.0.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction \& Design Architecture}
+
+DataKit is designed around five core architectural pillars:
+\begin{enumerate}
+    \item \textbf{Explicit Safety over Silent Convenience}: Destructive cleaning operations require explicit \texttt{confirm=True} arguments. Silent errors and implicit rank-broadcasting are flagged or prevented.
+    \item \textbf{Immutable Pipeline Ergonomics}: Functions that clean or transform datasets return a new \texttt{DataKit} instance containing a modified copy, leaving the original dataset untouched.
+    \item \textbf{Zero Matplotlib State-Bleed}: All visualization methods operate purely on Matplotlib \texttt{Figure} and \texttt{Axes} objects, allowing seamless integration into custom subplot grids.
+    \item \textbf{Three-Part Explained Exceptions}: All error messages adhere to a three-part structure: \textit{what happened}, \textit{why it matters}, and \textit{suggested fix}.
+    \item \textbf{Thin Abstraction Layer}: DataKit orchestrates NumPy and Pandas without introducing redundant custom data structures.
+\end{enumerate}
+
+\section{Installation \& Requirements}
+
+DataKit requires Python 3.10 or higher.
+
+\subsection{Core Dependencies}
+\begin{itemize}
+    \item \texttt{numpy $\ge$ 1.24}
+    \item \texttt{pandas $\ge$ 2.0}
+    \item \texttt{matplotlib $\ge$ 3.7}
+    \item \texttt{seaborn $\ge$ 0.13}
+\end{itemize}
+
+\subsection{Installation Options}
+\begin{lstlisting}[language=bash]
+# Standard Installation via Git
+pip install git+https://github.com/Rajtech69/DataKit.git
+
+# Installation with optional ML, Excel, and Arrow extras
+pip install "git+https://github.com/Rajtech69/DataKit.git#egg=datakit[all]"
+\end{lstlisting}
+
+\section{Core DataKit Class}
+
+The \texttt{DataKit} class in \texttt{datakit.core.datakit} serves as the primary dataset wrapper.
+
+\begin{lstlisting}[language=Python]
+import datakit as dk
+
+# Instantiation from CSV, Excel, Parquet, JSON, or DataFrame
+data = dk.DataKit("dataset.csv")
+
+# Escape Hatch: Access live DataFrame reference
+df = data.df
+\end{lstlisting}
+
+\section{Broadcasting \& Safety Module}
+
+The \texttt{dk.safe} module prevents silent NumPy and Pandas shape broadcasting errors.
+
+\begin{lstlisting}[language=Python]
+import datakit as dk
+import numpy as np
+
+a = np.arange(5)          # Shape (5,)
+b = np.arange(5)[:, None]  # Shape (5, 1)
+
+# Issues ImplicitBroadcastWarning naming (5,) - (5, 1) -> (5, 5)
+res = dk.safe.subtract(a, b)
+
+# Inspect shapes pre-flight
+shape_info = dk.safe.check_shapes(a, b)
+print(shape_info.explanation)
+\end{lstlisting}
+
+\section{Data Quality \& Non-Destructive Cleaning}
+
+DataKit segregates data inspection from modification.
+
+\subsection{Data Audit}
+\begin{lstlisting}[language=Python]
+audit = data.audit()
+print(audit.summary)
+df_issues = audit.to_dataframe()
+\end{lstlisting}
+
+\subsection{Non-Destructive Cleaning}
+\begin{lstlisting}[language=Python]
+# Report-first default (no modifications made)
+data.clean()
+
+# Confirmed non-destructive clean
+cleaned = data.clean(missing="impute_median", duplicates="drop", confirm=True)
+print(cleaned.last_clean_report.diff_summary())
+\end{lstlisting}
+
+\section{Object-Oriented Visualization}
+
+All plots return a \texttt{PlotResult} holding \texttt{.fig} and \texttt{.ax} attributes.
+
+\begin{lstlisting}[language=Python]
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+cleaned.plot.hist("age", ax=axes[0])
+cleaned.plot.scatter("age", "charges", hue="smoker", trend=True, ax=axes[1])
+\end{lstlisting}
+
+\section{Machine Learning Dataset Preparation}
+
+\begin{lstlisting}[language=Python]
+ml_data = cleaned.prepare(
+    target="charges",
+    task="regression",
+    scale=True,
+    encode="onehot"
+)
+
+X_train = ml_data.X_train
+pipeline = ml_data.preprocessing_pipeline
+\end{lstlisting}
+
+\section{Multi-Format Synthesis Reports}
+
+\begin{lstlisting}[language=Python]
+# Export 8-section synthesis report in HTML, Markdown, or JSON
+cleaned.report(format="html", path="synthesis_report.html")
+cleaned.report(format="markdown", path="report.md")
+cleaned.report(format="json", path="report.json")
+\end{lstlisting}
+
+\end{document}
