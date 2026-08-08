@@ -1,4 +1,4 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[11pt,a4paper,oneside]{book}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
@@ -7,28 +7,29 @@
 \usepackage{booktabs}
 \usepackage{titlesec}
 \usepackage{amsmath,amssymb}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
 
-% Package setup
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    pdftitle={DataKit Official User Guide},
-    pdfpagemode=FullScreen,
-}
+% Page Setup
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{DataKit} Technical Reference Manual}
+\lhead{Version 0.1.0}
+\cfoot{\thepage}
+
+% Color Palette
+\definecolor{primary}{rgb}{0.0, 0.2, 0.4}
+\definecolor{secondary}{rgb}{0.2, 0.4, 0.6}
+\definecolor{backcolour}{rgb}{0.97, 0.97, 0.97}
+\definecolor{codegreen}{rgb}{0.0, 0.5, 0.2}
+\definecolor{codepurple}{rgb}{0.5, 0.0, 0.5}
 
 % Code Listing Configuration
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.96,0.96,0.96}
-
 \lstdefinestyle{pythonstyle}{
     backgroundcolor=\color{backcolour},   
     commentstyle=\color{codegreen},
-    keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
+    keywordstyle=\color{primary}\bfseries,
+    numberstyle=\tiny\color{gray},
     stringstyle=\color{codepurple},
     basicstyle=\ttfamily\small,
     breakatwhitespace=false,         
@@ -36,7 +37,7 @@
     captionpos=b,                    
     keepspaces=true,                 
     numbers=left,                    
-    numbersep=5pt,                  
+    numbersep=6pt,                  
     showspaces=false,                
     showstringspaces=false,
     showtabs=false,                  
@@ -44,37 +45,49 @@
 }
 \lstset{style=pythonstyle}
 
-\title{\textbf{DataKit: Safety-First Python Data Science Abstraction Layer}\\[0.5em] \large Official Technical User Guide \& Reference Manual}
-\author{\textbf{Rajtech69}}
-\date{Version 0.1.0 --- August 2026}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{primary}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
 
 \begin{document}
 
-\maketitle
+% Title Page
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge\bfseries\color{primary} DataKit: A Safety-First Abstraction Layer for Python Data Science\par}
+    \vspace{1cm}
+    {\Large\itshape Comprehensive Technical Guide \& Architectural Reference Manual\par}
+    \vspace{2cm}
+    {\Large\bfseries Author: Rajtech69\par}
+    \vfill
+    {\large Version 0.1.0 --- August 2026\par}
+\end{titlepage}
 
-\begin{abstract}
-DataKit is a human-oriented, safety-first Python library built directly on top of NumPy, Pandas, Matplotlib, and Seaborn. It provides explicit safety guards against silent broadcasting bugs, non-destructive data cleaning with mandatory confirmation gates, pure Object-Oriented visual rendering without global state-bleed, scikit-learn pipeline dataset preparation, and zero-dependency multi-format report generation. This document provides a complete technical specification and user manual for DataKit v0.1.0.
-\end{abstract}
+\frontmatter
+\chapter*{Preface}
+DataKit is a Python library that provides a high-intent, safety-guaranteed interface over NumPy, Pandas, Matplotlib, and Seaborn. It eliminates silent failures, implicit rank-broadcasting errors, state-bleed in Matplotlib, and boilerplate code in exploratory data analysis (EDA), cleaning, visualization, ML preparation, and reporting.
 
 \tableofcontents
-\newpage
 
-\section{Introduction \& Design Architecture}
+\mainmatter
 
-DataKit is designed around five core architectural pillars:
+\chapter{Architectural Philosophy \& Safety-First Paradigm}
+
+\section{Core Design Principles}
+DataKit adheres to five fundamental design pillars:
+
 \begin{enumerate}
-    \item \textbf{Explicit Safety over Silent Convenience}: Destructive cleaning operations require explicit \texttt{confirm=True} arguments. Silent errors and implicit rank-broadcasting are flagged or prevented.
-    \item \textbf{Immutable Pipeline Ergonomics}: Functions that clean or transform datasets return a new \texttt{DataKit} instance containing a modified copy, leaving the original dataset untouched.
-    \item \textbf{Zero Matplotlib State-Bleed}: All visualization methods operate purely on Matplotlib \texttt{Figure} and \texttt{Axes} objects, allowing seamless integration into custom subplot grids.
-    \item \textbf{Three-Part Explained Exceptions}: All error messages adhere to a three-part structure: \textit{what happened}, \textit{why it matters}, and \textit{suggested fix}.
-    \item \textbf{Thin Abstraction Layer}: DataKit orchestrates NumPy and Pandas without introducing redundant custom data structures.
+    \item \textbf{Explicit Safety over Silent Convenience}: Destructive data transformations require explicit \texttt{confirm=True} confirmation gates. Implicit rank-broadcasting operations that generate unwanted high-dimensional outer products are intercepted and flagged.
+    \item \textbf{Immutable Pipeline Ergonomics}: Methods that transform data (such as \texttt{clean()}) return a new \texttt{DataKit} instance containing a deep copy, preserving original dataset state.
+    \item \textbf{Pure Object-Oriented Visualizations}: Visual rendering operates exclusively on Matplotlib \texttt{Figure} and \texttt{Axes} instances without global \texttt{pyplot} state-bleed.
+    \item \textbf{Three-Part Explained Exceptions}: All error messages adhere to a 3-part structure: \textit{what happened}, \textit{why it matters}, and \textit{suggested fix}.
+    \item \textbf{Thin Orchestration Layer}: DataKit orchestrates underlying scientific stack components without creating heavy wrapper objects over primitive data structures.
 \end{enumerate}
 
-\section{Installation \& Requirements}
+\chapter{Installation \& Package Configuration}
 
-DataKit requires Python 3.10 or higher.
-
-\subsection{Core Dependencies}
+\section{System Requirements}
+DataKit requires Python 3.10+ along with the core scientific computing stack:
 \begin{itemize}
     \item \texttt{numpy $\ge$ 1.24}
     \item \texttt{pandas $\ge$ 2.0}
@@ -82,84 +95,111 @@ DataKit requires Python 3.10 or higher.
     \item \texttt{seaborn $\ge$ 0.13}
 \end{itemize}
 
-\subsection{Installation Options}
+\section{Installation Commands}
 \begin{lstlisting}[language=bash]
-# Standard Installation via Git
+# Install latest release from GitHub
 pip install git+https://github.com/Rajtech69/DataKit.git
 
-# Installation with optional ML, Excel, and Arrow extras
+# Install with optional extras (scikit-learn, openpyxl, pyarrow)
 pip install "git+https://github.com/Rajtech69/DataKit.git#egg=datakit[all]"
 \end{lstlisting}
 
-\section{Core DataKit Class}
+\chapter{Core DataKit Engine \& File Loading}
 
-The \texttt{DataKit} class in \texttt{datakit.core.datakit} serves as the primary dataset wrapper.
+\section{The DataKit Class}
+The \texttt{DataKit} class in \texttt{datakit.core.datakit} wraps input datasets and manages state.
 
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=python]
 import datakit as dk
 
-# Instantiation from CSV, Excel, Parquet, JSON, or DataFrame
-data = dk.DataKit("dataset.csv")
+# Load dataset (CSV, Excel, Parquet, JSON, or DataFrame)
+data = dk.DataKit("insurance.csv")
 
-# Escape Hatch: Access live DataFrame reference
-df = data.df
+# Access live DataFrame escape hatch
+df_live = data.df
 \end{lstlisting}
 
-\section{Broadcasting \& Safety Module}
+\section{Format Dispatch Matrix}
+DataKit implements format dispatch based on file extensions:
+\begin{itemize}
+    \item \texttt{.csv}: Dispatches to \texttt{pandas.read\_csv()}.
+    \item \texttt{.xlsx}, \texttt{.xls}: Dispatches to \texttt{pandas.read\_excel()} (requires \texttt{openpyxl}).
+    \item \texttt{.parquet}: Dispatches to \texttt{pandas.read\_parquet()} (requires \texttt{pyarrow}).
+    \item \texttt{.json}: Dispatches to \texttt{pandas.read\_json()}.
+\end{itemize}
 
-The \texttt{dk.safe} module prevents silent NumPy and Pandas shape broadcasting errors.
+\chapter{Broadcasting \& Safety Module (dk.safe)}
 
-\begin{lstlisting}[language=Python]
+\section{Broadcasting Vulnerability Overview}
+NumPy and Pandas automatically broadcast arrays of different ranks. Subtracting a 1D array of shape $(n,)$ from a 2D column vector of shape $(n, 1)$ silently produces a 2D matrix of shape $(n, n)$ rather than an element-wise operation.
+
+\section{Safe Operations API}
+\begin{lstlisting}[language=python]
 import datakit as dk
 import numpy as np
 
 a = np.arange(5)          # Shape (5,)
 b = np.arange(5)[:, None]  # Shape (5, 1)
 
-# Issues ImplicitBroadcastWarning naming (5,) - (5, 1) -> (5, 5)
+# Issues ImplicitBroadcastWarning naming shapes (5,) and (5, 1) -> (5, 5)
 res = dk.safe.subtract(a, b)
 
-# Inspect shapes pre-flight
+# Shape inspection pre-flight
 shape_info = dk.safe.check_shapes(a, b)
 print(shape_info.explanation)
 \end{lstlisting}
 
-\section{Data Quality \& Non-Destructive Cleaning}
+\chapter{Quality Audit \& Guided Cleaning}
 
-DataKit segregates data inspection from modification.
+\section{The 7-Check Quality Audit}
+Calling \texttt{data.audit()} runs 7 prioritized quality checks:
+\begin{enumerate}
+    \item \textbf{missing}: Identifies missing rates (>40\% critical, >10\% warning).
+    \item \textbf{duplicates}: Detects duplicate rows (>10\% critical).
+    \item \textbf{constant}: Warns on zero-variance columns.
+    \item \textbf{cardinality}: Warns on categoricals with >50 unique values.
+    \item \textbf{suspicious\_dtype}: Flags numeric-as-string object columns.
+    \item \textbf{id\_like}: Identifies primary key columns.
+    \item \textbf{leakage}: Detects target leakage correlations ($|r| \ge 0.98$).
+\end{enumerate}
 
-\subsection{Data Audit}
-\begin{lstlisting}[language=Python]
-audit = data.audit()
-print(audit.summary)
-df_issues = audit.to_dataframe()
-\end{lstlisting}
-
-\subsection{Non-Destructive Cleaning}
-\begin{lstlisting}[language=Python]
-# Report-first default (no modifications made)
-data.clean()
-
-# Confirmed non-destructive clean
+\section{Non-Destructive Cleaning}
+\begin{lstlisting}[language=python]
+# Confirmed cleaning with diff summary
 cleaned = data.clean(missing="impute_median", duplicates="drop", confirm=True)
 print(cleaned.last_clean_report.diff_summary())
 \end{lstlisting}
 
-\section{Object-Oriented Visualization}
+\chapter{Statistical Analysis \& Exploratory Profiling}
 
-All plots return a \texttt{PlotResult} holding \texttt{.fig} and \texttt{.ax} attributes.
+\section{Outlier Analysis}
+Outliers are detected via IQR or Z-score methods:
+\begin{lstlisting}[language=python]
+outliers = data.outliers(method="iqr", threshold=1.5)
+df_flagged = outliers.to_dataframe(data.df, flag_column="_is_outlier")
+\end{lstlisting}
 
-\begin{lstlisting}[language=Python]
+\section{Relationship Analysis}
+\begin{lstlisting}[language=python]
+relationships = data.relationships(method="pearson", threshold=0.7)
+print(relationships.strong_pairs)
+\end{lstlisting}
+
+\chapter{Object-Oriented Visualization Engine}
+
+All plot functions operate purely on Matplotlib \texttt{Figure} and \texttt{Axes} objects.
+
+\begin{lstlisting}[language=python]
 import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-cleaned.plot.hist("age", ax=axes[0])
+cleaned.plot.hist("charges", ax=axes[0])
 cleaned.plot.scatter("age", "charges", hue="smoker", trend=True, ax=axes[1])
 \end{lstlisting}
 
-\section{Machine Learning Dataset Preparation}
+\chapter{Machine Learning Dataset Preparation}
 
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=python]
 ml_data = cleaned.prepare(
     target="charges",
     task="regression",
@@ -171,13 +211,50 @@ X_train = ml_data.X_train
 pipeline = ml_data.preprocessing_pipeline
 \end{lstlisting}
 
-\section{Multi-Format Synthesis Reports}
+\chapter{Zero-Dependency Synthesis Reporting}
 
-\begin{lstlisting}[language=Python]
-# Export 8-section synthesis report in HTML, Markdown, or JSON
-cleaned.report(format="html", path="synthesis_report.html")
+\begin{lstlisting}[language=python]
+cleaned.report(format="html", path="report.html")
 cleaned.report(format="markdown", path="report.md")
 cleaned.report(format="json", path="report.json")
+\end{lstlisting}
+
+\chapter{Built-In Synthetic Datasets}
+
+DataKit includes built-in synthetic datasets that load safely offline:
+
+\begin{lstlisting}[language=python]
+import datakit as dk
+
+# List available datasets
+print(dk.list_datasets())  # ['churn', 'housing', 'insurance']
+
+# Load synthetic dataset into DataKit instance
+insurance = dk.load_dataset("insurance")
+housing = dk.load_dataset("housing")
+churn = dk.load_dataset("churn")
+\end{lstlisting}
+
+\chapter{Complete Practical Case Study}
+
+\begin{lstlisting}[language=python]
+import datakit as dk
+
+# 1. Load Built-In Synthetic Dataset
+data = dk.load_dataset("insurance")
+
+# 2. Inspect & Audit
+print(data.inspect())
+print(data.audit())
+
+# 3. Clean
+cleaned = data.clean(missing="impute_median", duplicates="drop", confirm=True)
+
+# 4. Prepare for ML
+ml_data = cleaned.prepare(target="charges", task="regression")
+
+# 5. Export HTML Report
+cleaned.report(format="html", path="insurance_synthesis.html")
 \end{lstlisting}
 
 \end{document}
