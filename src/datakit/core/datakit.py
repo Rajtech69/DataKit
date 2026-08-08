@@ -55,6 +55,18 @@ class DataKit:
         self._plot = None
         self._last_clean_report: CleanReport | None = None
 
+    @classmethod
+    def read(cls, source: str | Path | pd.DataFrame | dict[str, Any]) -> DataKit:
+        """Auto-detect file format from extension and load into a DataKit instance.
+
+        Args:
+            source: File path (.csv, .xlsx, .parquet, .json), DataFrame, or dict.
+
+        Returns:
+            DataKit instance.
+        """
+        return cls(source)
+
     @property
     def last_clean_report(self) -> CleanReport | None:
         """Return the CleanReport from the most recent clean() call on this instance, if any."""
@@ -377,4 +389,16 @@ class DataKit:
             self._df.head(3)._repr_html_(),
             "</div>"
         ]
-        return "".join(html)
+        return "\n".join(html)
+
+
+def read(source: str | Path | pd.DataFrame | dict[str, Any]) -> DataKit:
+    """Auto-detect file format from extension (.csv, .xlsx, .parquet, .json) and load into DataKit.
+
+    Args:
+        source: File path (str/Path), DataFrame, or dict.
+
+    Returns:
+        DataKit instance.
+    """
+    return DataKit(source)

@@ -65,8 +65,8 @@ def build_pdf():
         story.append(Spacer(1, 2))
 
     # Chapter 2 & 3
-    story.append(Paragraph("Chapter 2 & 3: Installation & Core DataKit Engine", h1_style))
-    code_core = "pip install git+https://github.com/Rajtech69/DataKit.git\n\nimport datakit as dk\n\n# Load CSV, Excel, Parquet, JSON, or DataFrame\ndata = dk.DataKit(\"insurance.csv\")\nprint(data.inspect())\n\n# Live DataFrame escape hatch\ndf_live = data.df"
+    story.append(Paragraph("Chapter 2 & 3: Installation & Core dk.read Engine", h1_style))
+    code_core = "pip install git+https://github.com/Rajtech69/DataKit.git\n\nimport datakit as dk\n\n# Auto-detect and load CSV, Excel, Parquet, JSON, or DataFrame\ndata = dk.read(\"insurance.csv\")\nprint(data.inspect())\n\n# Live DataFrame escape hatch\ndf_live = data.df"
     story.append(Preformatted(code_core, code_style))
 
     # Chapter 4 & 5

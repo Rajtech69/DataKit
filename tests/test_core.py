@@ -48,6 +48,17 @@ class TestDataKitInit:
         assert isinstance(data.df, pd.DataFrame)
         assert data.df.shape == sample_df.shape
 
+    def test_dk_read_function(self, insurance_csv_path):
+        import datakit as dk
+        data = dk.read(str(insurance_csv_path))
+        assert isinstance(data, DataKit)
+        assert data.df.shape[0] > 0
+
+    def test_datakit_read_classmethod(self, insurance_csv_path):
+        data = DataKit.read(insurance_csv_path)
+        assert isinstance(data, DataKit)
+        assert data.df.shape[0] > 0
+
     def test_from_dict(self):
         data = DataKit({"a": [1, 2, 3], "b": [4, 5, 6]})
         assert data.df.shape == (3, 2)

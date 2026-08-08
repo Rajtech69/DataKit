@@ -70,8 +70,8 @@ pip install dist/datakit-0.1.0-py3-none-any.whl
 import datakit as dk
 import numpy as np
 
-# 1. Load Dataset (Supports CSV, Excel, Parquet, JSON)
-data = dk.DataKit("insurance.csv")
+# 1. Auto-Detect & Load Data (dk.read supports CSV, Excel, Parquet, JSON)
+data = dk.read("insurance.csv")
 
 # 2. Inspect Structure & Audit Quality
 print(data.inspect())

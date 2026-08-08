@@ -106,14 +106,16 @@ pip install "git+https://github.com/Rajtech69/DataKit.git#egg=datakit[all]"
 
 \chapter{Core DataKit Engine \& File Loading}
 
-\section{The DataKit Class}
-The \texttt{DataKit} class in \texttt{datakit.core.datakit} wraps input datasets and manages state.
+\section{The Auto-Detect Reader: dk.read()}
+DataKit provides the \texttt{dk.read(source)} function to auto-detect file formats from extensions without requiring manual format parameters.
 
 \begin{lstlisting}[language=python]
 import datakit as dk
 
-# Load dataset (CSV, Excel, Parquet, JSON, or DataFrame)
-data = dk.DataKit("insurance.csv")
+# Auto-detect and load CSV, Excel, Parquet, JSON, or DataFrames
+data = dk.read("insurance.csv")
+data_excel = dk.read("data.xlsx")
+data_parquet = dk.read("data.parquet")
 
 # Access live DataFrame escape hatch
 df_live = data.df
