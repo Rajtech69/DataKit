@@ -96,10 +96,15 @@ cleaned.plot.scatter("age", "charges", hue="smoker", trend=True)
 
 # 7. Machine Learning Dataset Preparation
 ml_splits = cleaned.prepare(target="charges", task="regression", scale=True, encode="onehot")
-print("X_train shape:", ml_splits.X_train.shape)
-print("Fitted Pipeline:", ml_splits.preprocessing_pipeline)
 
-# 8. Export Standalone Report
+# 8. Model Training & Evaluation
+from sklearn.ensemble import RandomForestRegressor
+model = RandomForestRegressor().fit(ml_splits.X_train, ml_splits.y_train)
+eval_res = cleaned.evaluate(model, ml_splits.X_test, ml_splits.y_test, task="regression")
+print(eval_res.summary())
+eval_res.plot_predictions()  # Returns PlotResult with actual vs predicted scatter plot
+
+# 9. Export Standalone Synthesis Report
 cleaned.report(format="html", path="synthesis_report.html")
 ```
 

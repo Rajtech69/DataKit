@@ -12,6 +12,7 @@ from datakit.core.results import (
     CleanReport,
     DistributionResult,
     EDAResult,
+    EvaluationResult,
     InspectResult,
     MemoryResult,
     OutlierResult,
@@ -322,6 +323,28 @@ class DataKit:
             encode=encode,
             strict_leakage=strict_leakage,
         )
+
+    def evaluate(
+        self,
+        model: Any,
+        X_test: pd.DataFrame | np.ndarray,
+        y_test: pd.Series | np.ndarray,
+        task: Literal["classification", "regression", "auto"] = "auto",
+    ) -> EvaluationResult:
+        """Evaluate a trained scikit-learn model on test data.
+
+        Args:
+            model: Trained scikit-learn model or pipeline.
+            X_test: Test features.
+            y_test: True test target labels.
+            task: Task type ("classification", "regression", or "auto").
+
+        Returns:
+            EvaluationResult object.
+        """
+        from datakit.ml.evaluate import evaluate_model
+
+        return evaluate_model(model, X_test=X_test, y_test=y_test, task=task)
 
     def report(
         self,

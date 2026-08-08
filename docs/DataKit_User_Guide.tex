@@ -213,6 +213,30 @@ X_train = ml_data.X_train
 pipeline = ml_data.preprocessing_pipeline
 \end{lstlisting}
 
+\chapter{Model Evaluation Module}
+
+DataKit provides \texttt{data.evaluate()} (or \texttt{dk.evaluate\_model()}) to evaluate Scikit-Learn classification and regression models safely.
+
+\section{Classification \& Regression Evaluation}
+\begin{lstlisting}[language=python]
+from sklearn.ensemble import RandomForestClassifier
+
+# Train Scikit-Learn Model
+clf = RandomForestClassifier().fit(ml_data.X_train, ml_data.y_train)
+
+# Evaluate Model & Obtain EvaluationResult
+eval_res = cleaned.evaluate(clf, ml_data.X_test, ml_data.y_test, task="classification")
+print(eval_res.summary())
+
+# Plot Confusion Matrix
+plot_cm = eval_res.plot_confusion_matrix()
+
+# Regression Plots
+eval_reg = cleaned.evaluate(reg_model, X_test, y_test, task="regression")
+plot_pred = eval_reg.plot_predictions()
+plot_res = eval_reg.plot_residuals()
+\end{lstlisting}
+
 \chapter{Zero-Dependency Synthesis Reporting}
 
 \begin{lstlisting}[language=python]
