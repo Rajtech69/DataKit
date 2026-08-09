@@ -5,7 +5,17 @@ All notable changes to the DataKit project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-08-09
+## [0.2.0] - 2026-08-09
+
+### Added
+- **Approved PRD Ergonomic Additions**:
+  - `data.correlations(target)`: Filtered feature correlations sorted by absolute magnitude against target.
+  - `data.duplicates(subset=None)`: Standalone non-mutating view returning DataFrame of duplicate rows.
+  - `data.compare(other)`: Structural diff (`CompareResult`) analyzing shape, column, and dtype changes between DataKits.
+  - `dk.safe.reshape_column(series)`: Explicit 1D to 2D column vector shape converter.
+  - `data.plot.kde(column)`: Standalone Kernel Density Estimate plot without histogram bars.
+
+## [0.1.0] - 2026-08-08
 
 ### Added
 - **Core Abstraction Layer (`DataKit`)**: Single container wrapping Pandas DataFrame with copy semantics and non-destructive operations.
