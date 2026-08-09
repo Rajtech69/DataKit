@@ -76,13 +76,25 @@ def fit_model(
     if target not in df.columns:
         raise ColumnNotFoundError(target, list(df.columns))
 
-    # Auto-detect task if auto requested
+    model_key = model.lower().strip()
+
+    # Explicit model type overrides for auto task resolution
+    regression_models = {"linear", "linear_regression", "lr_reg", "ridge", "lasso", "svr"}
+    classification_models = {"logistic", "log_reg", "svc", "naive_bayes", "nb"}
+
     if task == "auto":
-        target_series = df[target].dropna()
-        if pd.api.types.is_numeric_dtype(target_series.dtype) and len(target_series.unique()) > 20:
+        if model_key in regression_models:
             task = "regression"
-        else:
+        elif model_key in classification_models:
             task = "classification"
+        else:
+            target_series = df[target].dropna()
+            if pd.api.types.is_float_dtype(target_series.dtype) or (
+                pd.api.types.is_numeric_dtype(target_series.dtype) and len(target_series.unique()) > 10
+            ):
+                task = "regression"
+            else:
+                task = "classification"
 
     # Split and preprocess data using prepare_data
     prep_res = prepare_data(
@@ -95,14 +107,13 @@ def fit_model(
         encode=encode,
     )
 
-    model_key = model.lower().strip()
     estimator: Any
 
     if task == "classification":
         if model_key in ("rf", "random_forest", "randomforest"):
             estimator = RandomForestClassifier(random_state=random_state, **model_kwargs)
             name = "RandomForestClassifier"
-        elif model_key in ("logistic", "linear", "lr"):
+        elif model_key in ("logistic", "log_reg"):
             estimator = LogisticRegression(random_state=random_state, max_iter=1000, **model_kwargs)
             name = "LogisticRegression"
         elif model_key in ("tree", "decision_tree"):

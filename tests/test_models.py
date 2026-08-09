@@ -66,3 +66,17 @@ class TestFitModel:
         cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
         with pytest.raises(ValueError, match="Unsupported classification model"):
             cleaned.fit(target="smoker", model="nonexistent_algorithm")
+
+    def test_fit_small_dataset_auto_task(self):
+        data = DataKit({
+            "age": [19, 28, 33, 32, 31, 46, 54, 37],
+            "sex": ["female", "male", "male", "male", "female", "female", "female", "male"],
+            "bmi": [27.9, 33.77, 22.7, 28.88, 25.74, 33.44, 30.8, 27.74],
+            "smoker": ["yes", "no", "no", "no", "no", "no", "no", "no"],
+            "charges": [16884.92, 1725.55, 4449.46, 21984.47, 3866.86, 8240.58, 11299.34, 7281.50]
+        })
+        res = data.fit(target="charges", model="linear")
+        assert isinstance(res, ModelResult)
+        assert res.task == "regression"
+        assert res.model_name == "LinearRegression"
+        assert "r2" in res.metrics
