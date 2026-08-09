@@ -43,24 +43,180 @@ class TestFitModel:
 
     def test_fit_logistic_regression(self, insurance_datakit):
         cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
-        res = cleaned.fit(target="smoker", model="logistic", random_state=42)
+        res = cleaned.fit(target="smoker", model="logistic", random_state=42, C=0.5, max_iter=500)
 
         assert isinstance(res, ModelResult)
+        assert res.model_name == "LogisticRegression"
+        assert res.task == "classification"
         assert "accuracy" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+        assert not res.feature_importances.empty
+
+        plot_imp = res.plot_importance()
+        assert isinstance(plot_imp, PlotResult)
+
+        # Test uniform kwarg alias: alpha -> C
+        res_alpha = cleaned.fit(target="smoker", model="logistic", alpha=2.0, random_state=42)
+        assert res_alpha.model.C == pytest.approx(0.5)
+        assert res_alpha.feature_importances is not None
 
     def test_fit_linear_regression(self, insurance_datakit):
         cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
-        res = cleaned.fit(target="charges", model="linear", task="regression")
+        res = cleaned.fit(target="charges", model="linear", task="regression", random_state=42)
 
         assert isinstance(res, ModelResult)
+        assert res.model_name == "LinearRegression"
+        assert res.task == "regression"
         assert "r2" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+        assert not res.feature_importances.empty
+
+        plot_imp = res.plot_importance()
+        assert isinstance(plot_imp, PlotResult)
+
+        preds = res.predict(res.X_test)
+        assert isinstance(preds, pd.Series)
+        assert len(preds) == len(res.y_test)
+
+    def test_fit_ridge_regression_and_classification(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+
+        # Ridge Regression
+        res_reg = cleaned.fit(target="charges", model="ridge", task="regression", alpha=0.5, random_state=42)
+        assert isinstance(res_reg, ModelResult)
+        assert res_reg.model_name == "Ridge"
+        assert res_reg.model.alpha == 0.5
+        assert res_reg.task == "regression"
+        assert "r2" in res_reg.metrics
+        assert res_reg.feature_importances is not None
+        assert isinstance(res_reg.feature_importances, pd.Series)
+        assert isinstance(res_reg.plot_importance(), PlotResult)
+
+        # Test uniform kwarg alias: C -> alpha
+        res_c = cleaned.fit(target="charges", model="ridge", task="regression", C=2.0, random_state=42)
+        assert res_c.model.alpha == pytest.approx(0.5)
+
+        # Ridge Classification
+        res_cls = cleaned.fit(target="smoker", model="ridge", task="classification", random_state=42)
+        assert isinstance(res_cls, ModelResult)
+        assert res_cls.model_name == "RidgeClassifier"
+        assert res_cls.task == "classification"
+        assert "accuracy" in res_cls.metrics
+        assert res_cls.feature_importances is not None
+        assert isinstance(res_cls.plot_importance(), PlotResult)
+
+    def test_fit_lasso_regression(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(
+            target="charges",
+            model="lasso",
+            task="regression",
+            alpha=0.01,
+            max_iter=2000,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "Lasso"
+        assert res.model.alpha == 0.01
+        assert res.model.max_iter == 2000
+        assert res.task == "regression"
+        assert "r2" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+        assert isinstance(res.plot_importance(), PlotResult)
+
+        # Test uniform kwarg alias: C -> alpha
+        res_c = cleaned.fit(target="charges", model="lasso", task="regression", C=10.0, random_state=42)
+        assert res_c.model.alpha == pytest.approx(0.1)
 
     def test_fit_knn(self, insurance_datakit):
         cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
-        res = cleaned.fit(target="smoker", model="knn", n_neighbors=3)
+        res = cleaned.fit(target="smoker", model="knn", n_neighbors=3, weights="distance", metric="euclidean")
 
         assert isinstance(res, ModelResult)
+        assert res.model_name == "KNeighborsClassifier"
+        assert res.model.n_neighbors == 3
+        assert res.model.weights == "distance"
+        assert res.model.metric == "euclidean"
         assert "accuracy" in res.metrics
+
+        preds = res.predict(res.X_test)
+        assert isinstance(preds, pd.Series)
+        assert len(preds) == len(res.y_test)
+
+        plot_eval = res.plot_evaluation()
+        assert isinstance(plot_eval, PlotResult)
+
+        with pytest.raises(ValueError, match="does not support feature importances"):
+            res.plot_importance()
+
+    def test_fit_knn_regressor_and_k_alias(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="charges", model="knn", k=7, task="regression")
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "KNeighborsRegressor"
+        assert res.model.n_neighbors == 7
+        assert res.task == "regression"
+        assert "r2" in res.metrics
+        assert "rmse" in res.metrics
+
+    def test_fit_svc_classification_and_kwargs(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="smoker", model="svc", C=2.0, kernel="rbf", gamma="scale")
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "SVC"
+        assert res.model.C == 2.0
+        assert res.model.kernel == "rbf"
+        assert "accuracy" in res.metrics
+
+        preds = res.predict(res.X_test)
+        assert isinstance(preds, pd.Series)
+
+        with pytest.raises(ValueError, match="does not support feature importances"):
+            res.plot_importance()
+
+    def test_fit_svm_c_alias(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="smoker", model="svm", c=0.5)
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "SVC"
+        assert res.model.C == 0.5
+
+    def test_fit_svr_regression_and_kwargs(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="charges", model="svr", C=10.0, kernel="rbf", task="regression")
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "SVR"
+        assert res.model.C == 10.0
+        assert res.task == "regression"
+        assert "r2" in res.metrics
+        assert "mae" in res.metrics
+
+        with pytest.raises(ValueError, match="does not support feature importances"):
+            res.plot_importance()
+
+    def test_fit_naive_bayes_classification_and_kwargs(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="smoker", model="naive_bayes", smoothing=1e-8)
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "GaussianNB"
+        assert res.model.var_smoothing == 1e-8
+        assert "accuracy" in res.metrics
+
+        res_nb_alias = cleaned.fit(target="smoker", model="nb")
+        assert isinstance(res_nb_alias, ModelResult)
+        assert res_nb_alias.model_name == "GaussianNB"
+
+        with pytest.raises(ValueError, match="does not support feature importances"):
+            res.plot_importance()
 
     def test_fit_unsupported_model_raises(self, insurance_datakit):
         cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
@@ -80,3 +236,149 @@ class TestFitModel:
         assert res.task == "regression"
         assert res.model_name == "LinearRegression"
         assert "r2" in res.metrics
+
+    def test_fit_gradient_boosting_classification(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(
+            target="smoker",
+            model="gb",
+            n_estimators=50,
+            learning_rate=0.05,
+            max_depth=3,
+            min_samples_split=4,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "GradientBoostingClassifier"
+        assert res.task == "classification"
+        assert "accuracy" in res.metrics
+        assert "f1" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+        assert not res.feature_importances.empty
+
+        # Test alias 'gradient_boosting'
+        res_alias = cleaned.fit(target="smoker", model="gradient_boosting", n_estimators=20)
+        assert isinstance(res_alias, ModelResult)
+        assert res_alias.model_name == "GradientBoostingClassifier"
+
+    def test_fit_gradient_boosting_regression(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(
+            target="charges",
+            model="gb",
+            task="regression",
+            n_estimators=60,
+            learning_rate=0.1,
+            max_depth=4,
+            min_samples_split=3,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "GradientBoostingRegressor"
+        assert res.task == "regression"
+        assert "r2" in res.metrics
+        assert "mae" in res.metrics
+        assert "rmse" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+
+    def test_fit_extra_trees_classification(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(
+            target="smoker",
+            model="extra_trees",
+            n_estimators=40,
+            max_depth=5,
+            min_samples_split=3,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "ExtraTreesClassifier"
+        assert res.task == "classification"
+        assert "accuracy" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+
+        # Test shortcut alias 'et'
+        res_alias = cleaned.fit(target="smoker", model="et", n_estimators=20)
+        assert isinstance(res_alias, ModelResult)
+        assert res_alias.model_name == "ExtraTreesClassifier"
+
+    def test_fit_extra_trees_regression(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(
+            target="charges",
+            model="extra_trees",
+            task="regression",
+            n_estimators=30,
+            max_depth=6,
+            min_samples_split=4,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "ExtraTreesRegressor"
+        assert res.task == "regression"
+        assert "r2" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+
+    def test_fit_decision_tree_classification(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        # Pass uniform tree kwargs including n_estimators to test safe handling
+        res = cleaned.fit(
+            target="smoker",
+            model="tree",
+            n_estimators=100,  # Should be safely handled/ignored for single tree
+            max_depth=4,
+            min_samples_split=3,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "DecisionTreeClassifier"
+        assert res.task == "classification"
+        assert "accuracy" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+
+        # Test alias 'decision_tree'
+        res_alias = cleaned.fit(target="smoker", model="decision_tree", max_depth=3)
+        assert isinstance(res_alias, ModelResult)
+        assert res_alias.model_name == "DecisionTreeClassifier"
+
+    def test_fit_decision_tree_regression(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(
+            target="charges",
+            model="decision_tree",
+            task="regression",
+            n_estimators=50,  # Should be safely handled/ignored for single tree
+            max_depth=5,
+            min_samples_split=2,
+            random_state=42,
+        )
+
+        assert isinstance(res, ModelResult)
+        assert res.model_name == "DecisionTreeRegressor"
+        assert res.task == "regression"
+        assert "r2" in res.metrics
+        assert res.feature_importances is not None
+        assert isinstance(res.feature_importances, pd.Series)
+
+    def test_tree_models_feature_importances_format(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        for tree_model in ["rf", "gb", "extra_trees", "tree"]:
+            res = cleaned.fit(target="smoker", model=tree_model, random_state=42)
+            assert res.feature_importances is not None
+            assert isinstance(res.feature_importances, pd.Series)
+            assert len(res.feature_importances) > 0
+            # Values should be sorted descending
+            vals = res.feature_importances.values
+            assert all(vals[i] >= vals[i + 1] for i in range(len(vals) - 1))
+
+

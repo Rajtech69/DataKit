@@ -347,7 +347,11 @@ class ModelResult(DataKitResult):
 
     def plot_importance(self, top_n: int = 10) -> PlotResult:
         if self.feature_importances is None or self.feature_importances.empty:
-            raise ValueError(f"Model '{self.model_name}' does not support feature importances.")
+            raise ValueError(
+                f"Model '{self.model_name}' does not support feature importances. "
+                "Feature importance is only available for tree-based models (e.g., RandomForest, DecisionTree, ExtraTrees, GradientBoosting) "
+                "or models with computed feature importances."
+            )
         import matplotlib.pyplot as plt
         import seaborn as sns
 
