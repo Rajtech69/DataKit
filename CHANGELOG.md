@@ -5,6 +5,11 @@ All notable changes to the DataKit project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-08-09
+
+### Fixed
+- **Python 3.12 Type Annotation Compatibility**: Added `from __future__ import annotations` to `datakit.py` to prevent `NameError: name 'DataKit' is not defined` when evaluating class method return annotations in Python 3.12+ runtime environments.
+
 ## [0.2.0] - 2026-08-09
 
 ### Added
