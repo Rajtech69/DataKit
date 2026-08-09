@@ -33,3 +33,9 @@ class TestRelationships:
         res = sample_datakit.relationships()
         summary = res.summary()
         assert "Relationship Summary" in summary or "matrix" in repr(res).lower() or len(summary) > 0
+
+    def test_target_correlations(self, insurance_datakit):
+        corrs = insurance_datakit.correlations(target="charges")
+        assert isinstance(corrs, pd.Series)
+        assert "charges" not in corrs.index
+        assert len(corrs) > 0

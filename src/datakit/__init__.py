@@ -1,17 +1,14 @@
-"""
-DataKit is a Python library for fast exploratory data analysis and data preparation.
+"""DataKit is a safety-first, human-oriented abstraction layer over NumPy, Pandas, Matplotlib, and Seaborn.
 
 Example:
-    >>> from datakit import DataKit
-    >>> dk = DataKit("data.csv")
-    >>> dk.df.head()
+    >>> import datakit as dk
+    >>> data = dk.DataKit("data.csv")
+    >>> data.inspect()
 """
 
-from datakit.core.datakit import DataKit, read
+from datakit.core.datakit import DataKit
 from datakit.config import config
-from datakit.datasets import list_datasets, load_dataset
-from datakit.ml.evaluate import evaluate_model
 import datakit.safety.safe_ops as safe
 
 __version__ = "0.1.0"
-__all__ = ["DataKit", "read", "config", "safe", "load_dataset", "list_datasets", "evaluate_model"]
+__all__ = ["DataKit", "config", "safe"]

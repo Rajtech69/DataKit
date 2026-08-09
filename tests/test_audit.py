@@ -122,3 +122,8 @@ class TestAuditResultProperties:
         res = sample_datakit.audit()
         html = res._repr_html_()
         assert "AuditResult" in html
+
+    def test_duplicates_view(self, insurance_datakit):
+        dups = insurance_datakit.duplicates()
+        assert isinstance(dups, pd.DataFrame)
+        assert len(dups) > 0

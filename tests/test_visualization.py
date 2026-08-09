@@ -127,3 +127,9 @@ class TestConfigPrecedence:
 
         finally:
             dk.config.reset()
+
+    def test_plot_kde_basic(self, insurance_datakit):
+        res = insurance_datakit.plot.kde("charges")
+        assert isinstance(res, PlotResult)
+        assert res.fig is not None
+        assert res.ax is not None

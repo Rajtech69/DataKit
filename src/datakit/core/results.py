@@ -248,18 +248,29 @@ class PrepareResult(DataKitResult):
 
 
 @dataclass
-class MemoryResult(DataKitResult):
-    by_column: pd.Series
-    total_mb: float
-    suggestions: list[str]
+class CompareResult(DataKitResult):
+    shape_a: tuple[int, int]
+    shape_b: tuple[int, int]
+    added_columns: list[str]
+    removed_columns: list[str]
+    common_columns: list[str]
+    dtype_changes: list[tuple[str, str, str]]
 
     def summary(self) -> str:
         lines = [
-            f"Total Memory Usage: {self.total_mb:.2f} MB",
-            "Suggestions:"
+            "=== Dataset Comparison Report ===",
+            f"Dataset A Shape: {self.shape_a[0]} rows x {self.shape_a[1]} cols",
+            f"Dataset B Shape: {self.shape_b[0]} rows x {self.shape_b[1]} cols",
+            f"Added Columns ({len(self.added_columns)}): {self.added_columns}",
+            f"Removed Columns ({len(self.removed_columns)}): {self.removed_columns}",
+            f"Common Columns ({len(self.common_columns)}): {self.common_columns}",
         ]
-        for sug in self.suggestions:
-            lines.append(f"  - {sug}")
+        if self.dtype_changes:
+            lines.append("Data Type Changes:")
+            for col, old_t, new_t in self.dtype_changes:
+                lines.append(f"  - {col}: {old_t} -> {new_t}")
+        else:
+            lines.append("Data Type Changes: None")
         return "\n".join(lines)
 
 
@@ -293,67 +304,8 @@ class ShapeCheckResult(DataKitResult):
 
 @dataclass
 class AlignCheckResult(DataKitResult):
-    overlapping_labels: int
-    non_overlapping_df1: int
-    non_overlapping_df2: int
+    overlapping_labels: list[Any]
+    non_overlapping_df1: list[Any]
+    non_overlapping_df2: list[Any]
     match_pct: float
     explanation: str
-
-
-@dataclass
-class EvaluationResult(DataKitResult):
-    task: str
-    metrics: dict[str, float]
-    confusion_matrix: pd.DataFrame | None
-    predictions: pd.Series
-    actuals: pd.Series
-    model_name: str
-
-    def summary(self) -> str:
-        lines = [
-            f"=== Model Evaluation Report ({self.model_name}) ===",
-            f"Task: {self.task.upper()}",
-            "Key Metrics:"
-        ]
-        for name, val in self.metrics.items():
-            lines.append(f"  - {name.upper()}: {val:.4f}")
-        if self.confusion_matrix is not None:
-            lines.append("\nConfusion Matrix:")
-            lines.append(str(self.confusion_matrix))
-        return "\n".join(lines)
-
-    def plot_confusion_matrix(self) -> PlotResult:
-        if self.confusion_matrix is None:
-            raise ValueError("Confusion matrix plot is only available for classification tasks.")
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        fig, ax = plt.subplots(figsize=(6, 5))
-        sns.heatmap(self.confusion_matrix, annot=True, fmt="d", cmap="Blues", ax=ax)
-        ax.set_title(f"Confusion Matrix ({self.model_name})")
-        ax.set_xlabel("Predicted")
-        ax.set_ylabel("Actual")
-        return PlotResult(fig=fig, ax=ax, call_info="plot_confusion_matrix()")
-
-    def plot_predictions(self) -> PlotResult:
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(figsize=(7, 5))
-        ax.scatter(self.actuals, self.predictions, alpha=0.7, color="#0066cc")
-        min_val = min(self.actuals.min(), self.predictions.min())
-        max_val = max(self.actuals.max(), self.predictions.max())
-        ax.plot([min_val, max_val], [min_val, max_val], "r--", label="Ideal Perfect Fit")
-        ax.set_xlabel("Actual Values")
-        ax.set_ylabel("Predicted Values")
-        ax.set_title(f"Actual vs. Predicted ({self.model_name})")
-        ax.legend()
-        return PlotResult(fig=fig, ax=ax, call_info="plot_predictions()")
-
-    def plot_residuals(self) -> PlotResult:
-        import matplotlib.pyplot as plt
-        residuals = self.actuals - self.predictions
-        fig, ax = plt.subplots(figsize=(7, 5))
-        ax.scatter(self.predictions, residuals, alpha=0.7, color="#d9534f")
-        ax.axhline(0, color="black", linestyle="--")
-        ax.set_xlabel("Predicted Values")
-        ax.set_ylabel("Residuals (Actual - Predicted)")
-        ax.set_title(f"Residual Plot ({self.model_name})")
-        return PlotResult(fig=fig, ax=ax, call_info="plot_residuals()")

@@ -213,28 +213,33 @@ X_train = ml_data.X_train
 pipeline = ml_data.preprocessing_pipeline
 \end{lstlisting}
 
-\chapter{Model Evaluation Module}
+\chapter{Safe Utility Additions}
 
-DataKit provides \texttt{data.evaluate()} (or \texttt{dk.evaluate\_model()}) to evaluate Scikit-Learn classification and regression models safely.
+DataKit includes ergonomic safety utility additions:
 
-\section{Classification \& Regression Evaluation}
+\section{Duplicate Inspection \& Target Correlations}
 \begin{lstlisting}[language=python]
-from sklearn.ensemble import RandomForestClassifier
+# Extract duplicate rows
+dups_df = data.duplicates()
 
-# Train Scikit-Learn Model
-clf = RandomForestClassifier().fit(ml_data.X_train, ml_data.y_train)
+# Calculate target correlations
+target_corrs = data.correlations(target="charges")
+\end{lstlisting}
 
-# Evaluate Model & Obtain EvaluationResult
-eval_res = cleaned.evaluate(clf, ml_data.X_test, ml_data.y_test, task="classification")
-print(eval_res.summary())
+\section{Dataset Comparison \& Explicit Reshaping}
+\begin{lstlisting}[language=python]
+# Structural diff between original and cleaned DataKit
+comp_res = data.compare(cleaned)
+print(comp_res.summary())
 
-# Plot Confusion Matrix
-plot_cm = eval_res.plot_confusion_matrix()
+# Reshape 1D Series to 2D Column Vector
+col_vec = dk.safe.reshape_column(data.df["age"])
+\end{lstlisting}
 
-# Regression Plots
-eval_reg = cleaned.evaluate(reg_model, X_test, y_test, task="regression")
-plot_pred = eval_reg.plot_predictions()
-plot_res = eval_reg.plot_residuals()
+\section{Kernel Density Estimation (KDE)}
+\begin{lstlisting}[language=python]
+# Plot standalone KDE plot
+cleaned.plot.kde("charges", hue="smoker")
 \end{lstlisting}
 
 \chapter{Zero-Dependency Synthesis Reporting}

@@ -242,3 +242,22 @@ class PlotNamespace:
             instance_style=self._instance_style,
             **kwargs,
         )
+
+    def kde(
+        self,
+        column: str,
+        hue: str | None = None,
+        ax: Any = None,
+        **kwargs: Any,
+    ) -> PlotResult:
+        """Plot a standalone Kernel Density Estimate (KDE) plot for a numeric column."""
+        from datakit.visualization.plot_kde import plot_kde
+
+        return plot_kde(
+            self._datakit.df,
+            column=column,
+            hue=hue,
+            ax=ax,
+            instance_style=self._instance_style,
+            **kwargs,
+        )

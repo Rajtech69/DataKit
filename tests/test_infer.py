@@ -64,3 +64,16 @@ class TestInferSuspiciousDtypes:
         cols = [col for col, _ in suspicious]
         assert "numeric_as_string" in cols
         assert "real_numeric" not in cols
+
+
+class TestCompare:
+    def test_compare_datasets(self, sample_datakit):
+        df_mod = sample_datakit.df.copy()
+        df_mod["new_col"] = 1.0
+        df_mod = df_mod.drop(columns=["age"])
+
+        res = sample_datakit.compare(df_mod)
+        assert res.shape_a == sample_datakit.df.shape
+        assert "new_col" in res.added_columns
+        assert "age" in res.removed_columns
+        assert "=== Dataset Comparison Report ===" in res.summary()

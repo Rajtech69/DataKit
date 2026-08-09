@@ -73,7 +73,8 @@ def apply_common_layout(
     elif isinstance(legend, dict):
         ax.legend(**legend)
     elif isinstance(legend, str):
-        ax.legend(loc=legend)
+        from typing import cast
+        ax.legend(loc=cast(Any, legend))
 
     # 6. Tight layout
     if tight_layout:

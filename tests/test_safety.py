@@ -1,4 +1,5 @@
 """Tests for dk.safe.* safety operations."""
+import warnings
 import numpy as np
 import pandas as pd
 import pytest
@@ -44,7 +45,8 @@ class TestSafeArithmetic:
     def test_same_rank_no_warning(self):
         a = np.array([1, 2, 3])
         b = np.array([4, 5, 6])
-        with warnings_summary_check():
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             res = dk.safe.subtract(a, b)
         np.testing.assert_array_equal(res, [-3, -3, -3])
 
@@ -123,6 +125,10 @@ class TestAlignCheck:
         assert 2 in res.non_overlapping_df2
 
 
-def warnings_summary_check():
-    import warnings
-    return warnings.catch_warnings()
+class TestReshapeColumn:
+    def test_reshape_column(self):
+        import numpy as np
+        s = pd.Series([1, 2, 3, 4, 5])
+        col_vec = dk.safe.reshape_column(s)
+        assert isinstance(col_vec, np.ndarray)
+        assert col_vec.shape == (5, 1)

@@ -1,8 +1,8 @@
-from __future__ import annotations
-
+import html
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+import numpy as np
 import pandas as pd
 
 from datakit.core.exceptions import EmptyDataError
@@ -10,12 +10,12 @@ from datakit.core.warnings import LargeDatasetWarning
 from datakit.core.results import (
     AuditResult,
     CleanReport,
+    CompareResult,
     DistributionResult,
     EDAResult,
-    EvaluationResult,
     InspectResult,
-    MemoryResult,
     OutlierResult,
+    PlotResult,
     PrepareResult,
     RelationshipResult,
 )
@@ -53,20 +53,8 @@ class DataKit:
                 f"DataKit expects a file path (str/Path), DataFrame, or dict. "
                 f"Got {type(source).__name__}."
             )
-        self._plot = None
+        self._plot: Any = None
         self._last_clean_report: CleanReport | None = None
-
-    @classmethod
-    def read(cls, source: str | Path | pd.DataFrame | dict[str, Any]) -> DataKit:
-        """Auto-detect file format from extension and load into a DataKit instance.
-
-        Args:
-            source: File path (.csv, .xlsx, .parquet, .json), DataFrame, or dict.
-
-        Returns:
-            DataKit instance.
-        """
-        return cls(source)
 
     @property
     def last_clean_report(self) -> CleanReport | None:
@@ -223,6 +211,57 @@ class DataKit:
 
         return analyze_relationships(self._df, method=method, threshold=threshold)
 
+    def correlations(
+        self,
+        target: str,
+        method: Literal["pearson", "spearman"] = "pearson",
+    ) -> pd.Series:
+        """Calculate sorted feature correlations against a specific target column.
+
+        Args:
+            target: Name of target column.
+            method: Correlation method ("pearson" or "spearman").
+
+        Returns:
+            pd.Series sorted by absolute correlation magnitude.
+        """
+        from datakit.analysis.relationships import get_target_correlations
+
+        return get_target_correlations(self._df, target=target, method=method)
+
+    def duplicates(
+        self,
+        subset: list[str] | str | None = None,
+    ) -> pd.DataFrame:
+        """Return a new DataFrame containing all duplicate rows for inspection.
+
+        Args:
+            subset: Column name or list of column names to consider for duplicate checking.
+
+        Returns:
+            New pd.DataFrame containing duplicate rows.
+        """
+        from datakit.quality.audit import get_duplicate_rows
+
+        return get_duplicate_rows(self._df, subset=subset)
+
+    def compare(
+        self,
+        other: DataKit | pd.DataFrame,
+    ) -> CompareResult:
+        """Compare this dataset with another DataKit or DataFrame to highlight structural changes.
+
+        Args:
+            other: Second DataKit instance or DataFrame to compare against.
+
+        Returns:
+            CompareResult object.
+        """
+        from datakit.core.infer import compare_datasets
+
+        other_df = other.df if isinstance(other, DataKit) else other
+        return compare_datasets(self._df, other_df)
+
     def distributions(
         self,
         columns: list[str] | None = None,
@@ -324,28 +363,6 @@ class DataKit:
             strict_leakage=strict_leakage,
         )
 
-    def evaluate(
-        self,
-        model: Any,
-        X_test: pd.DataFrame | np.ndarray,
-        y_test: pd.Series | np.ndarray,
-        task: Literal["classification", "regression", "auto"] = "auto",
-    ) -> EvaluationResult:
-        """Evaluate a trained scikit-learn model on test data.
-
-        Args:
-            model: Trained scikit-learn model or pipeline.
-            X_test: Test features.
-            y_test: True test target labels.
-            task: Task type ("classification", "regression", or "auto").
-
-        Returns:
-            EvaluationResult object.
-        """
-        from datakit.ml.evaluate import evaluate_model
-
-        return evaluate_model(model, X_test=X_test, y_test=y_test, task=task)
-
     def report(
         self,
         result: EDAResult | AuditResult | None = None,
@@ -368,16 +385,6 @@ class DataKit:
         from datakit.reporting.report import generate_report
 
         return generate_report(self, result=result, format=format, path=path)
-
-    def memory(self) -> MemoryResult:
-        """Analyze memory consumption per column and provide downcasting recommendations.
-
-        Returns:
-            MemoryResult object.
-        """
-        from datakit.utils.memory import profile_memory
-
-        return profile_memory(self._df)
 
     @property
     def plot(self) -> Any:

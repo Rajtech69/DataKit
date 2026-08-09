@@ -60,3 +60,32 @@ def analyze_relationships(
         strong_pairs=strong_pairs,
         method=method,
     )
+
+
+def get_target_correlations(
+    df: pd.DataFrame,
+    target: str,
+    method: Literal["pearson", "spearman"] = "pearson",
+) -> pd.Series:
+    """Calculate and return sorted correlations of numeric features against a target column.
+
+    Args:
+        df: Input DataFrame.
+        target: Target column name.
+        method: Correlation method ("pearson" or "spearman").
+
+    Returns:
+        pd.Series of correlation values sorted by absolute magnitude descending.
+    """
+    from datakit.core.exceptions import ColumnNotFoundError
+
+    if target not in df.columns:
+        raise ColumnNotFoundError(target, list(df.columns))
+
+    numeric_df = df.select_dtypes(include=[np.number])
+    if target not in numeric_df.columns:
+        raise InsufficientDataError(f"Target column '{target}' is not numeric.")
+
+    corrs = numeric_df.corr(method=method)[target].drop(target)
+    sorted_corrs = corrs.iloc[corrs.abs().argsort()[::-1]]
+    return sorted_corrs

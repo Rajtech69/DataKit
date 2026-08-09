@@ -245,3 +245,19 @@ def audit(
     )
 
     return AuditResult(summary=summary, issues=filtered_issues)
+
+
+def get_duplicate_rows(
+    df: pd.DataFrame,
+    subset: list[str] | str | None = None,
+) -> pd.DataFrame:
+    """Return a new DataFrame containing all duplicate rows for inspection.
+
+    Args:
+        df: Input DataFrame.
+        subset: Column label or sequence of labels to consider for identifying duplicates.
+
+    Returns:
+        New pd.DataFrame containing duplicate rows (all occurrences).
+    """
+    return df[df.duplicated(subset=subset, keep=False)].copy()

@@ -70,41 +70,38 @@ pip install dist/datakit-0.1.0-py3-none-any.whl
 import datakit as dk
 import numpy as np
 
-# 1. Auto-Detect & Load Data (dk.read supports CSV, Excel, Parquet, JSON)
-data = dk.read("insurance.csv")
+# 1. Instantiate DataKit (supports CSV, Excel, Parquet, JSON, DataFrames, dicts)
+data = dk.DataKit("insurance.csv")
 
 # 2. Inspect Structure & Audit Quality
 print(data.inspect())
 audit = data.audit()
 print(audit.summary)
 
-# 3. Non-Destructive Cleaning
+# 3. View Duplicate Rows & Target Correlations
+dups = data.duplicates()
+target_corrs = data.correlations(target="charges")
+
+# 4. Non-Destructive Cleaning & Compare Diff
 cleaned = data.clean(missing="impute_median", duplicates="drop", confirm=True)
-print(cleaned.last_clean_report.diff_summary())
+diff_report = data.compare(cleaned)
+print(diff_report.summary())
 
-# 4. Outliers & Correlation Analysis
-outliers = cleaned.outliers(method="iqr")
-print(outliers.summary())
-
-# 5. Safe Arithmetic (Flags rank mismatch before executing)
+# 5. Safe Arithmetic & Explicit Reshape
 a = np.arange(5)
 b = np.arange(5)[:, None]
-diff = dk.safe.subtract(a, b)
+diff = dk.safe.subtract(a, b)  # Warns on rank mismatch
+col_vector = dk.safe.reshape_column(a)  # Explicitly reshapes (5,) -> (5, 1)
 
-# 6. Object-Oriented Plotting
+# 6. Object-Oriented Plotting & Density Estimation
 cleaned.plot.scatter("age", "charges", hue="smoker", trend=True)
+cleaned.plot.kde("charges", hue="smoker")
 
 # 7. Machine Learning Dataset Preparation
 ml_splits = cleaned.prepare(target="charges", task="regression", scale=True, encode="onehot")
+print("X_train shape:", ml_splits.X_train.shape)
 
-# 8. Model Training & Evaluation
-from sklearn.ensemble import RandomForestRegressor
-model = RandomForestRegressor().fit(ml_splits.X_train, ml_splits.y_train)
-eval_res = cleaned.evaluate(model, ml_splits.X_test, ml_splits.y_test, task="regression")
-print(eval_res.summary())
-eval_res.plot_predictions()  # Returns PlotResult with actual vs predicted scatter plot
-
-# 9. Export Standalone Synthesis Report
+# 8. Export Standalone Synthesis Report
 cleaned.report(format="html", path="synthesis_report.html")
 ```
 

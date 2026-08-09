@@ -201,3 +201,28 @@ def align_check(df1: pd.DataFrame | pd.Series, df2: pd.DataFrame | pd.Series, ho
         match_pct=match_pct,
         explanation=explanation,
     )
+
+
+def reshape_column(series_or_array: Any) -> np.ndarray:
+    """Explicit wrapper converting 1D Series or array into 2D column vector of shape (n, 1).
+
+    Purpose:
+        Fixes rank mismatches flagged by ImplicitBroadcastWarning by converting 1D shape (n,) to 2D (n, 1).
+
+    Params:
+        series_or_array (Any): 1D Pandas Series, list, or NumPy array.
+
+    Returns:
+        np.ndarray: 2D column vector of shape (n, 1).
+
+    Mutates: No (returns new 2D array view/copy).
+    Chainable: No.
+    Version Added: v0.1.0
+    """
+    arr = np.asarray(series_or_array)
+    if arr.ndim == 1:
+        return arr.reshape(-1, 1)
+    elif arr.ndim == 2 and arr.shape[1] == 1:
+        return arr
+    else:
+        raise ValueError(f"reshape_column expects 1D array or (n, 1) vector. Got array with shape {arr.shape}.")

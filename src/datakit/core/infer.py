@@ -13,6 +13,8 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
+from datakit.core.results import CompareResult
+
 from datakit.config import config
 
 ColumnType = Literal["numeric", "categorical", "datetime", "boolean"]
@@ -167,3 +169,40 @@ def infer_suspicious_dtypes(df: pd.DataFrame) -> list[tuple[str, str]]:
             pass
 
     return suspicious
+
+
+def compare_datasets(df_a: pd.DataFrame, df_b: pd.DataFrame) -> CompareResult:
+    """Compare two DataFrames structurally, analyzing shape, added/removed columns, and dtype changes.
+
+    Args:
+        df_a: First DataFrame (e.g. baseline or original).
+        df_b: Second DataFrame (e.g. transformed or target).
+
+    Returns:
+        CompareResult object.
+    """
+    shape_a = (df_a.shape[0], df_a.shape[1])
+    shape_b = (df_b.shape[0], df_b.shape[1])
+
+    cols_a = [str(c) for c in df_a.columns]
+    cols_b = [str(c) for c in df_b.columns]
+
+    added = [c for c in cols_b if c not in cols_a]
+    removed = [c for c in cols_a if c not in cols_b]
+    common = [c for c in cols_a if c in cols_b]
+
+    dtype_changes: list[tuple[str, str, str]] = []
+    for col in common:
+        type_a = str(df_a[col].dtype)
+        type_b = str(df_b[col].dtype)
+        if type_a != type_b:
+            dtype_changes.append((col, type_a, type_b))
+
+    return CompareResult(
+        shape_a=shape_a,
+        shape_b=shape_b,
+        added_columns=added,
+        removed_columns=removed,
+        common_columns=common,
+        dtype_changes=dtype_changes,
+    )
