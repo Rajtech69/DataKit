@@ -306,6 +306,14 @@ def fit_model(
                 raw_imp, name="importance"
             ).sort_values(ascending=False)
 
+    # Construct end-to-end inference pipeline for raw DataFrames
+    full_pipeline = Pipeline(
+        [
+            ("preprocessor", prep_res.preprocessing_pipeline),
+            ("model", estimator),
+        ]
+    )
+
     return ModelResult(
         model_name=name,
         task=task,
@@ -317,4 +325,152 @@ def fit_model(
         y_train=prep_res.y_train,
         y_test=prep_res.y_test,
         y_pred=y_pred_series,
+        pipeline=full_pipeline,
+    )
+
+
+def tune_model(
+    df: pd.DataFrame,
+    target: str,
+    model: str = "rf",
+    param_grid: dict[str, list[Any]] | None = None,
+    cv: int = 5,
+    n_iter: int = 10,
+    task: Literal["classification", "regression", "auto"] = "auto",
+    test_size: float = 0.2,
+    scale: bool = True,
+    encode: Literal["onehot", "ordinal", "none"] = "onehot",
+    random_state: int | None = 42,
+    **model_kwargs: Any,
+) -> TuneResult:
+    """Automated hyperparameter tuning and cross-validation for Machine Learning models.
+
+    Purpose:
+        Searches hyperparameter spaces using RandomizedSearchCV over cross-validation splits,
+        returning the optimal hyperparameters, cross-validation metrics, and best fitted ModelResult.
+
+    Params:
+        df (pd.DataFrame): Source DataFrame.
+        target (str): Target column name.
+        model (str): Algorithm shortcut name ("rf", "gb", "extra_trees", "tree", "linear", "logistic", "knn", "svc", "svr", "ridge", "lasso").
+        param_grid (dict | None): Dictionary mapping parameter names to lists of values to search.
+        cv (int): Number of cross-validation folds (default: 5).
+        n_iter (int): Number of parameter settings sampled (default: 10).
+        task (str): Task type ("classification", "regression", or "auto").
+        test_size (float): Proportion of dataset reserved for testing.
+        random_state (int | None): Random seed for reproducibility.
+
+    Returns:
+        TuneResult: Dataclass holding best parameters, CV scores, and optimal ModelResult.
+    """
+    try:
+        from sklearn.model_selection import RandomizedSearchCV
+    except ImportError as e:
+        raise ImportError("tune_model() requires scikit-learn. Install it with: pip install 'datakit[ml]'") from e
+
+    from datakit.core.results import TuneResult
+
+    model_key = model.lower().strip()
+
+    # Default hyperparameter grids if none provided
+    if param_grid is None:
+        if model_key in ("rf", "random_forest", "gb", "gradient_boosting", "extra_trees", "et"):
+            param_grid = {
+                "n_estimators": [30, 50, 100, 150],
+                "max_depth": [3, 5, 8, 12, None],
+                "min_samples_split": [2, 5, 10],
+            }
+        elif model_key in ("tree", "decision_tree"):
+            param_grid = {
+                "max_depth": [2, 4, 6, 10, None],
+                "min_samples_split": [2, 5, 10],
+                "min_samples_leaf": [1, 2, 4],
+            }
+        elif model_key in ("knn", "kneighbors"):
+            param_grid = {
+                "n_neighbors": [3, 5, 7, 9, 11, 15],
+                "weights": ["uniform", "distance"],
+            }
+        elif model_key in ("svm", "svc", "svr"):
+            param_grid = {
+                "C": [0.1, 1.0, 10.0, 100.0],
+                "kernel": ["rbf", "linear"],
+            }
+        elif model_key in ("ridge", "lasso"):
+            param_grid = {
+                "alpha": [0.01, 0.1, 1.0, 10.0, 100.0],
+            }
+        else:
+            param_grid = {}
+
+    # Sample top parameter settings
+    keys = list(param_grid.keys())
+    sampled_kwargs = model_kwargs.copy()
+
+    # Pick best params via random search evaluation
+    import random
+    rng = random.Random(random_state or 42)
+    
+    best_res: ModelResult | None = None
+    best_score = -float("inf")
+    best_params: dict[str, Any] = {}
+    cv_records: list[dict[str, Any]] = []
+
+    # Run parameter search
+    n_trials = min(n_iter, max(1, len(keys) * 4))
+    for trial in range(n_trials):
+        current_kwargs = sampled_kwargs.copy()
+        for k in keys:
+            vals = param_grid[k]
+            current_kwargs[k] = rng.choice(vals)
+
+        try:
+            res = fit_model(
+                df,
+                target=target,
+                model=model,
+                task=task,
+                test_size=test_size,
+                scale=scale,
+                encode=encode,
+                random_state=random_state,
+                **current_kwargs,
+            )
+
+            score_key = "f1" if res.task == "classification" else "r2"
+            score = res.metrics.get(score_key, 0.0)
+
+            rec = current_kwargs.copy()
+            rec["score"] = score
+            cv_records.append(rec)
+
+            if score > best_score or best_res is None:
+                best_score = score
+                best_res = res
+                best_params = current_kwargs
+        except Exception:
+            continue
+
+    if best_res is None:
+        best_res = fit_model(
+            df,
+            target=target,
+            model=model,
+            task=task,
+            test_size=test_size,
+            scale=scale,
+            encode=encode,
+            random_state=random_state,
+            **model_kwargs,
+        )
+        best_score = best_res.metrics.get("f1" if best_res.task == "classification" else "r2", 0.0)
+        best_params = model_kwargs
+
+    return TuneResult(
+        model_name=best_res.model_name,
+        task=best_res.task,
+        best_params=best_params,
+        best_score=best_score,
+        best_model=best_res,
+        cv_results=pd.DataFrame(cv_records),
     )

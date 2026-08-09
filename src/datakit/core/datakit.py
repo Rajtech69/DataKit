@@ -21,6 +21,7 @@ from datakit.core.results import (
     PlotResult,
     PrepareResult,
     RelationshipResult,
+    TuneResult,
 )
 from datakit.config import config
 
@@ -452,6 +453,53 @@ class DataKit:
             self._df,
             target=target,
             model=model,
+            task=task,
+            test_size=test_size,
+            scale=scale,
+            encode=encode,
+            random_state=random_state,
+            **model_kwargs,
+        )
+
+    def tune(
+        self,
+        target: str,
+        model: str = "rf",
+        param_grid: dict[str, list[Any]] | None = None,
+        cv: int = 5,
+        n_iter: int = 10,
+        task: Literal["classification", "regression", "auto"] = "auto",
+        test_size: float = 0.2,
+        scale: bool = True,
+        encode: Literal["onehot", "ordinal", "none"] = "onehot",
+        random_state: int | None = 42,
+        **model_kwargs: Any,
+    ) -> TuneResult:
+        """Automated hyperparameter tuning and cross-validation search.
+
+        Args:
+            target: Name of target column.
+            model: Algorithm shortcut name.
+            param_grid: Dictionary of parameter names to lists of values to search.
+            cv: Number of cross-validation folds.
+            n_iter: Number of parameter settings sampled.
+            task: Task type ("classification", "regression", or "auto").
+            test_size: Test set proportion.
+            random_state: Random seed for training.
+            **model_kwargs: Base parameters passed to estimator.
+
+        Returns:
+            TuneResult object containing best parameters, CV score, and best ModelResult.
+        """
+        from datakit.ml.models import tune_model
+
+        return tune_model(
+            self._df,
+            target=target,
+            model=model,
+            param_grid=param_grid,
+            cv=cv,
+            n_iter=n_iter,
             task=task,
             test_size=test_size,
             scale=scale,

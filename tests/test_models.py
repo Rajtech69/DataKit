@@ -381,4 +381,50 @@ class TestFitModel:
             vals = res.feature_importances.values
             assert all(vals[i] >= vals[i + 1] for i in range(len(vals) - 1))
 
+    def test_predict_raw_dataframe(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="charges", model="rf", random_state=42)
+
+        # Pass a raw DataFrame with un-encoded string categories
+        raw_input = pd.DataFrame({
+            "age": [30, 45],
+            "sex": ["female", "male"],
+            "bmi": [25.5, 31.0],
+            "children": [1, 2],
+            "smoker": ["no", "yes"],
+            "region": ["southwest", "northeast"],
+            "plan_type": ["basic", "basic"],
+            "id": [101, 102]
+        })
+
+        preds = res.predict(raw_input)
+        assert isinstance(preds, pd.Series)
+        assert len(preds) == 2
+
+    def test_classification_roc_and_pr_curves(self, insurance_datakit):
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+        res = cleaned.fit(target="smoker", model="rf", random_state=42)
+
+        # Test predict_proba
+        probs = res.predict_proba(res.X_test)
+        assert isinstance(probs, pd.DataFrame)
+
+        # Test plot_roc_curve and plot_pr_curve
+        roc_plot = res.plot_roc_curve()
+        assert isinstance(roc_plot, PlotResult)
+
+        pr_plot = res.plot_pr_curve()
+        assert isinstance(pr_plot, PlotResult)
+
+    def test_tune_model_hyperparameter_search(self, insurance_datakit):
+        from datakit.core.results import TuneResult
+        cleaned = insurance_datakit.clean(missing="impute_median", confirm=True)
+
+        tune_res = cleaned.tune(target="charges", model="rf", n_iter=3, random_state=42)
+        assert isinstance(tune_res, TuneResult)
+        assert tune_res.model_name == "RandomForestRegressor"
+        assert "=== DataKit Hyperparameter Tuning Report" in tune_res.summary()
+        assert isinstance(tune_res.cv_results, pd.DataFrame)
+        assert isinstance(tune_res.best_model, ModelResult)
+
 

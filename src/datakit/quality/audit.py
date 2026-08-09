@@ -119,7 +119,7 @@ def audit(
             )
 
     # 3. Constant and near-constant columns check
-    if "constant" in run_checks:
+    if "constant" in run_checks and len(df) > 1:
         near_constant_thresh = config.get("near_constant_threshold")
 
         for col in df.columns:
@@ -142,19 +142,22 @@ def audit(
                         recommendation=f"Drop constant column '{col}' as it contains zero variance.",
                     )
                 )
-            else:
-                top_val_count = series.value_counts().iloc[0]
-                top_ratio = top_val_count / len(series)
-                if top_ratio >= near_constant_thresh:
-                    top_val = series.value_counts().index[0]
-                    issues.append(
-                        Issue(
-                            column=str(col),
-                            severity="info",
-                            message=f"Column '{col}' is near-constant ({top_ratio*100:.1f}% single value {top_val!r}).",
-                            recommendation=f"Verify if column '{col}' provides useful signal.",
+            elif n_unique > 1:
+                val_counts = series.value_counts()
+                if len(val_counts) > 0:
+                    top_val_count = val_counts.iloc[0]
+                    most_common_ratio = top_val_count / len(series)
+
+                    if most_common_ratio >= near_constant_thresh:
+                        top_val = val_counts.index[0]
+                        issues.append(
+                            Issue(
+                                column=str(col),
+                                severity="info",
+                                message=f"Column '{col}' is near-constant ({most_common_ratio:.1%} of values are {top_val!r}).",
+                                recommendation=f"Check if column '{col}' provides enough predictive signal.",
+                            )
                         )
-                    )
 
     # 4. High cardinality check
     if "cardinality" in run_checks:

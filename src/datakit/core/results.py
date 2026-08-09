@@ -323,6 +323,7 @@ class ModelResult(DataKitResult):
     y_train: pd.Series
     y_test: pd.Series
     y_pred: pd.Series
+    pipeline: Any | None = None
 
     def summary(self) -> str:
         lines = [
@@ -342,8 +343,48 @@ class ModelResult(DataKitResult):
         return "\n".join(lines)
 
     def predict(self, X: pd.DataFrame | np.ndarray) -> pd.Series:
+        """Predict target values on raw or preprocessed feature input.
+
+        If a raw DataFrame matching unencoded feature names is passed, it is automatically
+        routed through the fitted preprocessing pipeline before model evaluation.
+        """
+        if self.pipeline is not None and isinstance(X, pd.DataFrame):
+            try:
+                preprocessor = self.pipeline.named_steps.get("preprocessor")
+                if preprocessor is not None:
+                    X_trans = preprocessor.transform(X)
+                    preds = self.model.predict(X_trans)
+                    return pd.Series(preds, index=X.index)
+            except Exception:
+                pass
+
         preds = self.model.predict(X)
+        if isinstance(X, pd.DataFrame):
+            return pd.Series(preds, index=X.index)
         return pd.Series(preds)
+
+    def predict_proba(self, X: pd.DataFrame | np.ndarray) -> pd.DataFrame:
+        """Predict class probabilities for classification tasks."""
+        if self.task != "classification":
+            raise ValueError("predict_proba() is only available for classification tasks.")
+
+        target_X = X
+        if self.pipeline is not None and isinstance(X, pd.DataFrame):
+            try:
+                preprocessor = self.pipeline.named_steps.get("preprocessor")
+                if preprocessor is not None:
+                    target_X = preprocessor.transform(X)
+            except Exception:
+                pass
+
+        if hasattr(self.model, "predict_proba"):
+            probs = self.model.predict_proba(target_X)
+        elif hasattr(self.model, "decision_function"):
+            probs = self.model.decision_function(target_X)
+        else:
+            raise ValueError(f"Model '{self.model_name}' does not support probability predictions.")
+
+        return pd.DataFrame(probs)
 
     def plot_importance(self, top_n: int = 10) -> PlotResult:
         if self.feature_importances is None or self.feature_importances.empty:
@@ -361,6 +402,69 @@ class ModelResult(DataKitResult):
         ax.set_title(f"Top {len(top_feats)} Feature Importances ({self.model_name})")
         ax.set_xlabel("Importance Score")
         return PlotResult(fig=fig, ax=ax, call_info="plot_importance()")
+
+    def plot_roc_curve(self) -> PlotResult:
+        """Plot Receiver Operating Characteristic (ROC) curve with AUC score."""
+        if self.task != "classification":
+            raise ValueError("plot_roc_curve() is only supported for classification models.")
+
+        import matplotlib.pyplot as plt
+        from sklearn.metrics import auc, roc_curve
+
+        try:
+            pos_label = self.model.classes_[1] if hasattr(self.model, "classes_") and len(self.model.classes_) >= 2 else None
+            if hasattr(self.model, "predict_proba"):
+                y_probs = self.model.predict_proba(self.X_test)[:, 1]
+            elif hasattr(self.model, "decision_function"):
+                y_probs = self.model.decision_function(self.X_test)
+            else:
+                raise ValueError("Model does not support probability output for ROC curve.")
+
+            fpr, tpr, _ = roc_curve(self.y_test, y_probs, pos_label=pos_label)
+            roc_auc = auc(fpr, tpr)
+        except Exception as e:
+            raise ValueError(f"Could not compute ROC curve: {e}") from e
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.plot(fpr, tpr, color="#0066cc", lw=2, label=f"ROC curve (AUC = {roc_auc:.3f})")
+        ax.plot([0, 1], [0, 1], color="grey", lw=1, linestyle="--")
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.set_xlabel("False Positive Rate")
+        ax.set_ylabel("True Positive Rate")
+        ax.set_title(f"ROC Curve ({self.model_name})")
+        ax.legend(loc="lower right")
+        return PlotResult(fig=fig, ax=ax, call_info="plot_roc_curve()")
+
+    def plot_pr_curve(self) -> PlotResult:
+        """Plot Precision-Recall curve with Average Precision (AP) score."""
+        if self.task != "classification":
+            raise ValueError("plot_pr_curve() is only supported for classification models.")
+
+        import matplotlib.pyplot as plt
+        from sklearn.metrics import average_precision_score, precision_recall_curve
+
+        try:
+            pos_label = self.model.classes_[1] if hasattr(self.model, "classes_") and len(self.model.classes_) >= 2 else None
+            if hasattr(self.model, "predict_proba"):
+                y_probs = self.model.predict_proba(self.X_test)[:, 1]
+            elif hasattr(self.model, "decision_function"):
+                y_probs = self.model.decision_function(self.X_test)
+            else:
+                raise ValueError("Model does not support probability output for Precision-Recall curve.")
+
+            precision, recall, _ = precision_recall_curve(self.y_test, y_probs, pos_label=pos_label)
+            ap = average_precision_score(self.y_test, y_probs, pos_label=pos_label)
+        except Exception as e:
+            raise ValueError(f"Could not compute Precision-Recall curve: {e}") from e
+
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.plot(recall, precision, color="#009966", lw=2, label=f"Precision-Recall (AP = {ap:.3f})")
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
+        ax.set_title(f"Precision-Recall Curve ({self.model_name})")
+        ax.legend(loc="lower left")
+        return PlotResult(fig=fig, ax=ax, call_info="plot_pr_curve()")
 
     def plot_evaluation(self) -> PlotResult:
         import matplotlib.pyplot as plt
@@ -386,3 +490,27 @@ class ModelResult(DataKitResult):
             ax.set_title(f"Actual vs. Predicted ({self.model_name})")
             ax.legend()
             return PlotResult(fig=fig, ax=ax, call_info="plot_evaluation()")
+
+
+@dataclass
+class TuneResult(DataKitResult):
+    model_name: str
+    task: str
+    best_params: dict[str, Any]
+    best_score: float
+    best_model: ModelResult
+    cv_results: pd.DataFrame
+
+    def summary(self) -> str:
+        lines = [
+            f"=== DataKit Hyperparameter Tuning Report ({self.model_name}) ===",
+            f"Task Type: {self.task.upper()}",
+            f"Best Cross-Validation Score: {self.best_score:.4f}",
+            "Optimal Hyperparameters:",
+        ]
+        for param, val in self.best_params.items():
+            clean_param = param.replace("model__", "")
+            lines.append(f"  - {clean_param}: {val}")
+
+        lines.append("\n" + self.best_model.summary())
+        return "\n".join(lines)
