@@ -309,3 +309,76 @@ class AlignCheckResult(DataKitResult):
     non_overlapping_df2: list[Any]
     match_pct: float
     explanation: str
+
+
+@dataclass
+class ModelResult(DataKitResult):
+    model_name: str
+    task: str
+    model: Any
+    metrics: dict[str, float]
+    feature_importances: pd.Series | None
+    X_train: pd.DataFrame
+    X_test: pd.DataFrame
+    y_train: pd.Series
+    y_test: pd.Series
+    y_pred: pd.Series
+
+    def summary(self) -> str:
+        lines = [
+            f"=== DataKit Model Training Report ({self.model_name}) ===",
+            f"Task Type: {self.task.upper()}",
+            "Evaluation Metrics:",
+        ]
+        for name, val in self.metrics.items():
+            lines.append(f"  - {name.upper()}: {val:.4f}")
+
+        if self.feature_importances is not None and not self.feature_importances.empty:
+            lines.append("\nTop 5 Feature Importances:")
+            top5 = self.feature_importances.head(5)
+            for feat, val in top5.items():
+                lines.append(f"  - {feat}: {val:.4f}")
+
+        return "\n".join(lines)
+
+    def predict(self, X: pd.DataFrame | np.ndarray) -> pd.Series:
+        preds = self.model.predict(X)
+        return pd.Series(preds)
+
+    def plot_importance(self, top_n: int = 10) -> PlotResult:
+        if self.feature_importances is None or self.feature_importances.empty:
+            raise ValueError(f"Model '{self.model_name}' does not support feature importances.")
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        top_feats = self.feature_importances.head(top_n).sort_values(ascending=True)
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.barplot(x=top_feats.values, y=top_feats.index, hue=top_feats.index, palette="viridis", legend=False, ax=ax)
+        ax.set_title(f"Top {len(top_feats)} Feature Importances ({self.model_name})")
+        ax.set_xlabel("Importance Score")
+        return PlotResult(fig=fig, ax=ax, call_info="plot_importance()")
+
+    def plot_evaluation(self) -> PlotResult:
+        import matplotlib.pyplot as plt
+
+        if self.task == "classification":
+            import seaborn as sns
+            from sklearn.metrics import confusion_matrix
+            cm = confusion_matrix(self.y_test, self.y_pred)
+            fig, ax = plt.subplots(figsize=(6, 5))
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+            ax.set_title(f"Confusion Matrix ({self.model_name})")
+            ax.set_xlabel("Predicted Label")
+            ax.set_ylabel("True Label")
+            return PlotResult(fig=fig, ax=ax, call_info="plot_evaluation()")
+        else:
+            fig, ax = plt.subplots(figsize=(7, 5))
+            ax.scatter(self.y_test, self.y_pred, alpha=0.7, color="#0066cc")
+            min_val = min(float(self.y_test.min()), float(self.y_pred.min()))
+            max_val = max(float(self.y_test.max()), float(self.y_pred.max()))
+            ax.plot([min_val, max_val], [min_val, max_val], "r--", label="Ideal Perfect Fit")
+            ax.set_xlabel("Actual Values")
+            ax.set_ylabel("Predicted Values")
+            ax.set_title(f"Actual vs. Predicted ({self.model_name})")
+            ax.legend()
+            return PlotResult(fig=fig, ax=ax, call_info="plot_evaluation()")

@@ -80,8 +80,8 @@ def build_pdf():
     story.append(Preformatted(code_viz, code_style))
 
     # Chapter 8, 9 & 10
-    story.append(Paragraph("Chapter 8, 9 & 10: ML Prep, Safe Additions & Reporting", h1_style))
-    code_ml_rep = "# Scikit-Learn Machine Learning Preparation\nml_data = cleaned.prepare(target=\"charges\", task=\"regression\", scale=True, encode=\"onehot\")\n\n# Structural Comparison & Target Correlations\ncomp_res = data.compare(cleaned)\nprint(comp_res.summary())\ntarget_corrs = data.correlations(target=\"charges\")\n\n# Multi-Format Report Export\ncleaned.report(format=\"html\", path=\"synthesis_report.html\")"
+    story.append(Paragraph("Chapter 8, 9 & 10: ML Prep, Model Fitting & Reporting", h1_style))
+    code_ml_rep = "# Machine Learning Preparation & One-Line Model Training\nml_data = cleaned.prepare(target=\"charges\", task=\"regression\")\nmodel_res = cleaned.fit(target=\"charges\", model=\"random_forest\")\nprint(model_res.summary())\nmodel_res.plot_importance()\n\n# Multi-Format Report Export\ncleaned.report(format=\"html\", path=\"synthesis_report.html\")"
     story.append(Preformatted(code_ml_rep, code_style))
 
     doc.build(story)

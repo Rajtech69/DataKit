@@ -97,11 +97,17 @@ col_vector = dk.safe.reshape_column(a)  # Explicitly reshapes (5,) -> (5, 1)
 cleaned.plot.scatter("age", "charges", hue="smoker", trend=True)
 cleaned.plot.kde("charges", hue="smoker")
 
-# 7. Machine Learning Dataset Preparation
+# 7. Machine Learning Dataset Preparation & Feature Engineering
 ml_splits = cleaned.prepare(target="charges", task="regression", scale=True, encode="onehot")
 print("X_train shape:", ml_splits.X_train.shape)
 
-# 8. Export Standalone Synthesis Report
+# 8. Train Any Machine Learning Model in One Simple Step
+model_res = cleaned.fit(target="charges", model="random_forest")
+print(model_res.summary())
+model_res.plot_importance()   # Visualizes top feature importances
+model_res.plot_evaluation()   # Visualizes actual vs. predicted or confusion matrix
+
+# 9. Export Standalone Synthesis Report
 cleaned.report(format="html", path="synthesis_report.html")
 ```
 

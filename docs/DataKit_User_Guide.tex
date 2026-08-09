@@ -244,6 +244,20 @@ col_vec = dk.safe.reshape_column(data.df["age"])
 cleaned.plot.kde("charges", hue="smoker")
 \end{lstlisting}
 
+\section{One-Line Machine Learning Model Training}
+\begin{lstlisting}[language=python]
+# Train Random Forest model in 1 simple step
+res = cleaned.fit(target="charges", model="random_forest")
+print(res.summary())
+
+# Plot feature importances & evaluation diagnostic
+res.plot_importance()
+res.plot_evaluation()
+
+# Predict on new features
+y_preds = res.predict(X_new)
+\end{lstlisting}
+
 \chapter{Zero-Dependency Synthesis Reporting}
 
 \begin{lstlisting}[language=python]

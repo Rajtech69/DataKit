@@ -14,6 +14,7 @@ from datakit.core.results import (
     DistributionResult,
     EDAResult,
     InspectResult,
+    ModelResult,
     OutlierResult,
     PlotResult,
     PrepareResult,
@@ -415,6 +416,46 @@ class DataKit:
             n_splits=n_splits,
             stratified=stratified,
             random_state=random_state,
+        )
+
+    def fit(
+        self,
+        target: str,
+        model: str = "rf",
+        task: Literal["classification", "regression", "auto"] = "auto",
+        test_size: float = 0.2,
+        scale: bool = True,
+        encode: Literal["onehot", "ordinal", "none"] = "onehot",
+        random_state: int | None = 42,
+        **model_kwargs: Any,
+    ) -> ModelResult:
+        """Train and evaluate any machine learning algorithm in one simple step.
+
+        Args:
+            target: Name of target column.
+            model: Algorithm shortcut ("rf", "linear", "logistic", "tree", "svc", "svr", "gb", "extra_trees", "knn", "ridge", "lasso", "naive_bayes").
+            task: Task type ("classification", "regression", or "auto").
+            test_size: Test set proportion (default: 0.2).
+            scale: Whether to scale numeric features.
+            encode: Categorical encoding ("onehot", "ordinal", "none").
+            random_state: Random seed for training.
+            **model_kwargs: Additional parameters passed to scikit-learn estimator.
+
+        Returns:
+            ModelResult object containing trained model, metrics, and evaluation plots.
+        """
+        from datakit.ml.models import fit_model
+
+        return fit_model(
+            self._df,
+            target=target,
+            model=model,
+            task=task,
+            test_size=test_size,
+            scale=scale,
+            encode=encode,
+            random_state=random_state,
+            **model_kwargs,
         )
 
     def report(
