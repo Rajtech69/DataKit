@@ -363,6 +363,60 @@ class DataKit:
             strict_leakage=strict_leakage,
         )
 
+    def encode_target(self, target: str) -> tuple[pd.Series, dict[Any, int]]:
+        """Encode a categorical target column into 0-indexed integer labels.
+
+        Args:
+            target: Name of target column to encode.
+
+        Returns:
+            Tuple of (encoded Series, reverse label mapping dictionary).
+        """
+        from datakit.ml.ml_helpers import encode_target_labels
+
+        return encode_target_labels(self._df, target=target)
+
+    def imbalance_ratio(self, target: str) -> pd.DataFrame:
+        """Analyze target class distribution and class imbalance ratios.
+
+        Args:
+            target: Classification target column name.
+
+        Returns:
+            pd.DataFrame with class counts, percentages, and imbalance ratios.
+        """
+        from datakit.ml.ml_helpers import check_imbalance
+
+        return check_imbalance(self._df, target=target)
+
+    def cv_splits(
+        self,
+        target: str | None = None,
+        n_splits: int = 5,
+        stratified: bool = True,
+        random_state: int | None = None,
+    ) -> list[tuple[np.ndarray, np.ndarray]]:
+        """Generate K-Fold or Stratified K-Fold cross-validation index splits.
+
+        Args:
+            target: Optional target column for stratified splitting.
+            n_splits: Number of CV folds (default: 5).
+            stratified: Whether to use Stratified K-Fold when target is provided.
+            random_state: Seed for reproducible splits.
+
+        Returns:
+            List of (train_indices, validation_indices) tuples.
+        """
+        from datakit.ml.ml_helpers import create_cv_splits
+
+        return create_cv_splits(
+            self._df,
+            target=target,
+            n_splits=n_splits,
+            stratified=stratified,
+            random_state=random_state,
+        )
+
     def report(
         self,
         result: EDAResult | AuditResult | None = None,

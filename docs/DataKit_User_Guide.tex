@@ -17,21 +17,23 @@
 \lhead{Version 0.1.0}
 \cfoot{\thepage}
 
-% Color Palette
-\definecolor{primary}{rgb}{0.0, 0.2, 0.4}
-\definecolor{secondary}{rgb}{0.2, 0.4, 0.6}
-\definecolor{backcolour}{rgb}{0.97, 0.97, 0.97}
-\definecolor{codegreen}{rgb}{0.0, 0.5, 0.2}
-\definecolor{codepurple}{rgb}{0.5, 0.0, 0.5}
+% Dark Mode Code Palette (Black Background)
+\definecolor{primary}{rgb}{0.0, 0.4, 0.8}
+\definecolor{secondary}{rgb}{0.2, 0.5, 0.8}
+\definecolor{darkback}{rgb}{0.08, 0.08, 0.10}
+\definecolor{codegreen}{rgb}{0.4, 0.9, 0.5}
+\definecolor{codecyan}{rgb}{0.3, 0.85, 1.0}
+\definecolor{codeyellow}{rgb}{1.0, 0.85, 0.4}
+\definecolor{codewhite}{rgb}{0.95, 0.95, 0.95}
 
-% Code Listing Configuration
+% Code Listing Configuration (Black Background)
 \lstdefinestyle{pythonstyle}{
-    backgroundcolor=\color{backcolour},   
-    commentstyle=\color{codegreen},
-    keywordstyle=\color{primary}\bfseries,
-    numberstyle=\tiny\color{gray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{darkback},   
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{codecyan}\bfseries,
+    numberstyle=\tiny\color{lightgray},
+    stringstyle=\color{codeyellow},
+    basicstyle=\ttfamily\small\color{codewhite},
     breakatwhitespace=false,         
     breaklines=true,                 
     captionpos=b,                    

@@ -55,3 +55,22 @@ class TestPrepare:
 
         with pytest.raises(DataKitError, match="potential target leakage"):
             dk.prepare(target="target", strict_leakage=True)
+
+    def test_encode_target(self, insurance_datakit):
+        encoded, mapping = insurance_datakit.encode_target(target="smoker")
+        assert isinstance(encoded, pd.Series)
+        assert isinstance(mapping, dict)
+        assert "yes" in mapping or "no" in mapping
+
+    def test_imbalance_ratio(self, insurance_datakit):
+        imb = insurance_datakit.imbalance_ratio(target="smoker")
+        assert isinstance(imb, pd.DataFrame)
+        assert "imbalance_ratio" in imb.columns
+        assert "count" in imb.columns
+
+    def test_cv_splits(self, insurance_datakit):
+        splits = insurance_datakit.cv_splits(target="smoker", n_splits=3)
+        assert len(splits) == 3
+        for train_idx, val_idx in splits:
+            assert len(train_idx) > 0
+            assert len(val_idx) > 0

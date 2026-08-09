@@ -16,7 +16,7 @@ def build_pdf():
     h1_style = ParagraphStyle("Heading1Custom", parent=styles["Heading1"], fontName="Helvetica-Bold", fontSize=14, leading=18, textColor=colors.HexColor("#003366"), spaceBefore=14, spaceAfter=6)
     h2_style = ParagraphStyle("Heading2Custom", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=11, leading=14, textColor=colors.HexColor("#222222"), spaceBefore=10, spaceAfter=4)
     body_style = ParagraphStyle("BodyCustom", parent=styles["BodyText"], fontName="Helvetica", fontSize=9.5, leading=13.5, textColor=colors.HexColor("#222222"))
-    code_style = ParagraphStyle("CodeCustom", fontName="Courier", fontSize=8, leading=10.5, textColor=colors.HexColor("#002b36"), backColor=colors.HexColor("#f5f5f5"), borderPadding=6)
+    code_style = ParagraphStyle("CodeCustom", fontName="Courier-Bold", fontSize=8, leading=10.5, textColor=colors.HexColor("#00ffbb"), backColor=colors.HexColor("#121212"), borderPadding=8)
 
     story = []
 
